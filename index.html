@@ -25,7 +25,6 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
-        /* Estilos dos pátios (Turnos) */
         .secao-turno {
             background: white;
             margin-bottom: 30px;
@@ -73,7 +72,6 @@
         .status-ok { background-color: #d4edda; color: #155724; }
         .status-pendente { background-color: #fff3cd; color: #856404; }
         
-        /* O bilhetinho de aviso! */
         .motivo-caixa {
             background-color: #f8d7da;
             color: #721c24;
@@ -98,17 +96,32 @@
             color: #777;
             font-style: italic;
         }
+        
+        .aviso-erro {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 20px;
+            border: 2px solid #ffeeba;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Painel de Upload de Materiais</h1>
-    <div id="painel-dinamico"></div>
+    <div id="painel-dinamico">
+        <p style="text-align: center; color: #666;">Carregando os materiais...</p>
+    </div>
 </div>
 
 <script>
-    const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=414322120&single=true&output=csv";
+    // Nova URL CSV fornecida
+    const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=1550988071&single=true&output=csv";
+    const painel = document.getElementById("painel-dinamico");
 
     function carregarDados() {
         Papa.parse(urlCSV, {
@@ -121,22 +134,38 @@
                 let tarde = [];
                 let noite = [];
 
+                if (dados.length <= 1) {
+                    painel.innerHTML = `
+                        <div class="aviso-erro">
+                            ⚠️ A planilha está conectada com sucesso, mas não encontrei nenhuma linha de dados preenchida na aba <b>Controle_Materiais</b>.<br>
+                            Preencha pelo menos uma linha com data, turno e turma para os blocos aparecem aqui!
+                        </div>
+                    `;
+                    return;
+                }
+
                 for (let i = 1; i < dados.length; i++) {
                     const linha = dados[i];
-                    if (!linha[0]) continue;
+                    if (!linha[0] || linha[0].trim() === "") continue;
 
-                    const turno = linha[1];
+                    const turno = linha[1] ? linha[1].trim() : "";
                     if (turno === "Manhã") manha.push(linha);
                     else if (turno === "Tarde") tarde.push(linha);
                     else if (turno === "Noite") noite.push(linha);
                 }
 
-                const painel = document.getElementById("painel-dinamico");
-                painel.innerHTML = "";
+                painel.innerHTML = ""; 
 
                 painel.appendChild(criarSecaoTurno("☀️ Manhã", "bg-manha", manha));
                 painel.appendChild(criarSecaoTurno("🌇 Tarde", "bg-tarde", tarde));
                 painel.appendChild(criarSecaoTurno("🌙 Noite", "bg-noite", noite));
+            },
+            error: function(erro) {
+                painel.innerHTML = `
+                    <div class="aviso-erro" style="background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;">
+                        🚨 Erro ao ler a planilha. Verifique se o link CSV está correto e se a aba foi publicada na web.
+                    </div>
+                `;
             }
         });
     }
@@ -175,16 +204,15 @@
         const tbody = tabela.querySelector("tbody");
 
         linhasDeDados.forEach(linha => {
-            const dataAula = linha[0];
-            const turma = linha[2];
+            const dataAula = linha[0] || "";
+            const turma = linha[2] || "";
             const disc1 = linha[3] ? `<div class="disciplina-caixa">1º: ${linha[3]}</div>` : "";
             const disc2 = linha[4] ? `<div class="disciplina-caixa">2º: ${linha[4]}</div>` : "";
             const arquivos = linha[5] || "";
             const subido = linha[6] === "TRUE";
             const dataUpload = linha[7] || "";
-            const motivo = linha[8] || ""; // Pega o texto da coluna de Justificativa
+            const motivo = linha[8] || ""; 
 
-            // Lógica do Status e Motivo
             let statusHtml = "";
             let motivoHtml = "";
 
@@ -192,7 +220,6 @@
                 statusHtml = `<div class="status status-ok">✅ No Site</div><br><small>${dataUpload}</small>`;
             } else {
                 statusHtml = `<div class="status status-pendente">⏳ Pendente</div>`;
-                // Se não subiu e tem um motivo escrito, mostra o bilhetinho!
                 if (motivo.trim() !== "") {
                     motivoHtml = `<div class="motivo-caixa">⚠️ ${motivo}</div>`;
                 }

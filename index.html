@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Materiais - NTI</title>
+    <!-- Biblioteca para ler o CSV do Google Sheets com facilidade -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1c4587;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #1c4587;
+            color: white;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85em;
+            display: inline-block;
+        }
+        .status-ok { background-color: #d4edda; color: #155724; }
+        .status-pendente { background-color: #fff3cd; color: #856404; }
+        
+        /* Preserva as quebras de linha que você der no Google Sheets */
+        .arquivos {
+            white-space: pre-wrap; 
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Painel de Upload de Materiais</h1>
+    <table id="tabela-materiais">
+        <thead>
+            <tr>
+                <th>Data da Aula</th>
+                <th>Turno</th>
+                <th>Turma</th>
+                <th>Arquivos Disponíveis</th>
+                <th>Status</th>
+                <th>Atualizado em</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Os dados da planilha aparecerão aqui -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // BIZU: Cole aqui o link CSV que o Google Sheets gerou!
+    const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSylrJUITfen_63inVecygMJS0AgRrLQys93nQpPSxY4fjXS17vtsi4RxoAY64A9WLQMu65DDrMrj--/pub?gid=433374887&single=true&output=csv";
+
+    function carregarDados() {
+        if (urlCSV === "https://docs.google.com/spreadsheets/d/e/2PACX-1vSylrJUITfen_63inVecygMJS0AgRrLQys93nQpPSxY4fjXS17vtsi4RxoAY64A9WLQMu65DDrMrj--/pub?gid=433374887&single=true&output=csv") {
+            document.querySelector("tbody").innerHTML = "<tr><td colspan='6' style='text-align:center; color:red;'>Por favor, insira o link CSV no código da página.</td></tr>";
+            return;
+        }
+
+        Papa.parse(urlCSV, {
+            download: true,
+            header: false,
+            complete: function(results) {
+                const dados = results.data;
+                const tbody = document.querySelector("#tabela-materiais tbody");
+                tbody.innerHTML = ""; // Limpa a tabela antes de preencher
+
+                // Pula a primeira linha (cabeçalhos) e começa do índice 1
+                for (let i = 1; i < dados.length; i++) {
+                    const linha = dados[i];
+                    
+                    // Se a linha estiver vazia, ignora
+                    if (!linha[0]) continue;
+
+                    const dataAula = linha[0];
+                    const turno = linha[1];
+                    const turma = linha[2];
+                    const arquivos = linha[3];
+                    const subido = linha[4] === "TRUE"; // A caixa de seleção no Sheets retorna TRUE ou FALSE
+                    const dataUpload = linha[5] || "-";
+
+                    // Define o visual do status
+                    let statusHtml = "";
+                    if (subido) {
+                        statusHtml = `<span class="status status-ok">✅ No Site</span>`;
+                    } else {
+                        statusHtml = `<span class="status status-pendente">⏳ Pendente</span>`;
+                    }
+
+                    // Cria a linha na tabela HTML
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td><strong>${dataAula}</strong></td>
+                        <td>${turno}</td>
+                        <td>${turma}</td>
+                        <td class="arquivos">${arquivos}</td>
+                        <td>${statusHtml}</td>
+                        <td><small>${dataUpload}</small></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+        });
+    }
+
+    // Chama a função assim que a página carregar
+    window.onload = carregarDados;
+</script>
+
+</body>
+</html>

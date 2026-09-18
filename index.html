@@ -23,6 +23,8 @@
             --cor-titulo-h1: #1c4587;
             --cor-input-bg: #ffffff;
             --cor-input-border: #cbd5e1;
+            --cor-btn-filtro-bg: #e2e8f0;
+            --cor-btn-filtro-texto: #334155;
         }
 
         /* Tema Escuro */
@@ -39,6 +41,8 @@
             --cor-titulo-h1: #63b3ed;
             --cor-input-bg: #2d3748;
             --cor-input-border: #4a5568;
+            --cor-btn-filtro-bg: #4a5568;
+            --cor-btn-filtro-texto: #e2e8f0;
         }
 
         body {
@@ -84,19 +88,22 @@
         .timer-container strong {
             color: var(--cor-titulo-h1);
             font-size: 1.1em;
-            font-variant-numeric: tabular-nums; /* Mantém os números alinhados enquanto mudam */
+            font-variant-numeric: tabular-nums;
         }
 
-        /* Lupa de Detetive */
-        .busca-container {
+        /* Controles de Busca e Filtro */
+        .controles-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
             margin-bottom: 30px;
-            text-align: center;
+            flex-wrap: wrap;
         }
         .busca-input {
-            width: 100%;
-            max-width: 600px;
-            padding: 15px 20px;
-            font-size: 1.1em;
+            flex: 1;
+            max-width: 500px;
+            padding: 14px 20px;
+            font-size: 1.05em;
             border: 2px solid var(--cor-input-border);
             border-radius: 30px;
             background-color: var(--cor-input-bg);
@@ -106,6 +113,30 @@
             transition: border-color 0.3s;
         }
         .busca-input:focus { border-color: var(--cor-titulo-h1); }
+
+        /* Botão de Filtro "Apenas Pendentes" */
+        .btn-filtro {
+            padding: 0 20px;
+            font-size: 1em;
+            font-weight: 600;
+            border: 2px solid var(--cor-input-border);
+            border-radius: 30px;
+            background-color: var(--cor-btn-filtro-bg);
+            color: var(--cor-btn-filtro-texto);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .btn-filtro:hover { opacity: 0.9; }
+        .btn-filtro.ativo {
+            background-color: #fef08a;
+            color: #854d0e;
+            border-color: #eab308;
+        }
 
         .turno-bloco { margin-bottom: 40px; }
         .turno-titulo {
@@ -262,9 +293,10 @@
         <strong id="contador-tempo">05:00</strong>
     </div>
     
-    <!-- Lupa de Detetive -->
-    <div class="busca-container">
-        <input type="text" id="input-busca" class="busca-input" placeholder="🔍 Pesquisar por turma ou disciplina..." onkeyup="filtrarPainel()">
+    <!-- Controles (Busca + Botão Apenas Pendentes) -->
+    <div class="controles-container">
+        <input type="text" id="input-busca" class="busca-input" placeholder="🔍 Pesquisar por turma ou disciplina..." onkeyup="aplicarFiltros()">
+        <button id="btn-filtro-pendentes" class="btn-filtro" onclick="alternarFiltroPendentes()">⏳ Apenas Pendentes</button>
     </div>
 
     <div id="painel-dinamico">
@@ -276,6 +308,8 @@
     const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=424030956&single=true&output=csv";
     const painel = document.getElementById("painel-dinamico");
 
+    let apenasPendentesAtivo = false;
+
     // LÓGICA DO CRONÔMETRO (5 minutos = 300 segundos)
     let tempoRestante = 300; 
     const displayTempo = document.getElementById('contador-tempo');
@@ -284,7 +318,6 @@
         let minutos = Math.floor(tempoRestante / 60);
         let segundos = tempoRestante % 60;
         
-        // Coloca o zero na frente se for menor que 10 (ex: 04:09)
         minutos = minutos < 10 ? '0' + minutos : minutos;
         segundos = segundos < 10 ? '0' + segundos : segundos;
         
@@ -293,11 +326,9 @@
         if (tempoRestante > 0) {
             tempoRestante--;
         } else {
-            // Quando zerar, a página recarrega sozinha!
             window.location.reload();
         }
     }
-    // Faz o relógio rodar 1 vez por segundo
     setInterval(atualizarCronometro, 1000);
 
     // LÓGICA DO TEMA
@@ -328,14 +359,38 @@
     }
     carregarTemaSalvo();
 
-    // LÓGICA DA LUPA
-    function filtrarPainel() {
+    // BOTÃO FILTRO "APENAS PENDENTES"
+    function alternarFiltroPendentes() {
+        apenasPendentesAtivo = !apenasPendentesAtivo;
+        const btn = document.getElementById('btn-filtro-pendentes');
+        
+        if (apenasPendentesAtivo) {
+            btn.classList.add('ativo');
+            btn.innerHTML = '⏳ Mostrando Pendentes';
+        } else {
+            btn.classList.remove('ativo');
+            btn.innerHTML = '⏳ Apenas Pendentes';
+        }
+        
+        aplicarFiltros();
+    }
+
+    // FILTRO COMBINADO (LUPA + BOTÃO DE PENDENTES)
+    function aplicarFiltros() {
         const termoBusca = document.getElementById('input-busca').value.toLowerCase();
         const detalhesTurmas = document.querySelectorAll('details');
         
         detalhesTurmas.forEach(details => {
             const textoTurma = details.innerText.toLowerCase();
-            if (textoTurma.includes(termoBusca)) {
+            const contemPendentes = details.getAttribute('data-tem-pendente') === 'true';
+            
+            // Verifica o filtro de texto
+            const passaNoTexto = textoTurma.includes(termoBusca);
+            
+            // Verifica o filtro do botão de pendentes
+            const passaNoBotao = !apenasPendentesAtivo || contemPendentes;
+
+            if (passaNoTexto && passaNoBotao) {
                 details.style.display = 'block';
                 if (termoBusca !== "") {
                     details.open = true;
@@ -345,10 +400,11 @@
             }
         });
         
+        // Esconde os blocos de turno inteiros se não houver turmas visíveis dentro deles
         const blocosTurno = document.querySelectorAll('.turno-bloco');
         blocosTurno.forEach(bloco => {
-            const turmasVisiveis = bloco.querySelectorAll('details[style="display: block;"], details:not([style="display: none;"])');
-            if (turmasVisiveis.length === 0 && termoBusca !== "") {
+            const turmasVisiveis = bloco.querySelectorAll('details[style="display: block;"], details:not([style*="display: none"])');
+            if (turmasVisiveis.length === 0) {
                 bloco.style.display = 'none';
             } else {
                 bloco.style.display = 'block';
@@ -416,6 +472,9 @@
                     painel.appendChild(criarBlocoTurno("☀️ Turno da Manhã", "bg-manha", turmasOrganizadas["Manhã"]));
                     painel.appendChild(criarBlocoTurno("🌇 Turno da Tarde", "bg-tarde", turmasOrganizadas["Tarde"]));
                     painel.appendChild(criarBlocoTurno("🌙 Turno da Noite", "bg-noite", turmasOrganizadas["Noite"]));
+                    
+                    // Aplica o filtro atual caso o botão já estivesse ativo
+                    aplicarFiltros();
                 } catch (erro) {
                     painel.innerHTML = `<div class="erro-msg">🚨 Erro ao processar dados: ${erro.message}</div>`;
                 }
@@ -460,6 +519,8 @@
                     if (disc2.trim() !== "" && !subido2) temPendente = true;
                 });
                 
+                // Marca o elemento com um atributo de controle para o filtro
+                details.setAttribute('data-tem-pendente', temPendente);
                 details.open = temPendente; 
                 
                 const summary = document.createElement("summary");

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Materiais - NTI Quad Concursos</title>
+    <!-- Favicon Personalizado (Ícone na aba do navegador) -->
+    <link rel="icon" href="https://fav.farm/📖" />
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         /* Tema Claro */
@@ -114,7 +117,7 @@
         }
         .busca-input:focus { border-color: var(--cor-titulo-h1); }
 
-        /* Botão de Filtro "Apenas Pendentes" */
+        /* Botão de Filtro "Apenas Pendentes" com Badge */
         .btn-filtro {
             padding: 0 20px;
             font-size: 1em;
@@ -136,6 +139,18 @@
             background-color: #fef08a;
             color: #854d0e;
             border-color: #eab308;
+        }
+        .badge-contador {
+            background-color: #ef4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .btn-filtro.ativo .badge-contador {
+            background-color: #ca8a04;
+            color: white;
         }
 
         .turno-bloco { margin-bottom: 40px; }
@@ -293,10 +308,12 @@
         <strong id="contador-tempo">05:00</strong>
     </div>
     
-    <!-- Controles (Busca + Botão Apenas Pendentes) -->
+    <!-- Controles (Busca + Botão Apenas Pendentes com Contador) -->
     <div class="controles-container">
         <input type="text" id="input-busca" class="busca-input" placeholder="🔍 Pesquisar por turma ou disciplina..." onkeyup="aplicarFiltros()">
-        <button id="btn-filtro-pendentes" class="btn-filtro" onclick="alternarFiltroPendentes()">⏳ Apenas Pendentes</button>
+        <button id="btn-filtro-pendentes" class="btn-filtro" onclick="alternarFiltroPendentes()">
+            ⏳ Apenas Pendentes <span id="badge-pendentes" class="badge-contador">0</span>
+        </button>
     </div>
 
     <div id="painel-dinamico">
@@ -309,6 +326,7 @@
     const painel = document.getElementById("painel-dinamico");
 
     let apenasPendentesAtivo = false;
+    let totalPendentesGeral = 0;
 
     // LÓGICA DO CRONÔMETRO (5 minutos = 300 segundos)
     let tempoRestante = 300; 
@@ -366,13 +384,16 @@
         
         if (apenasPendentesAtivo) {
             btn.classList.add('ativo');
-            btn.innerHTML = '⏳ Mostrando Pendentes';
         } else {
             btn.classList.remove('ativo');
-            btn.innerHTML = '⏳ Apenas Pendentes';
         }
         
         aplicarFiltros();
+    }
+
+    // ATUALIZA O BADGE COM O TOTAL DE PENDENTES
+    function atualizarContadorBadge() {
+        document.getElementById('badge-pendentes').innerText = totalPendentesGeral;
     }
 
     // FILTRO COMBINADO (LUPA + LINHAS INDIVIDUAIS DE PENDENTES)
@@ -384,7 +405,6 @@
             const textoTurma = details.innerText.toLowerCase();
             const passaNoTexto = textoTurma.includes(termoBusca);
             
-            // Filtra as linhas individuais (matérias) dentro da tabela
             const linhasMateria = details.querySelectorAll('tbody tr');
             let linhasVisiveisNaTurma = 0;
 
@@ -392,7 +412,6 @@
                 const statusCell = tr.querySelector('.status');
                 const isPendente = statusCell && statusCell.classList.contains('status-pendente');
                 
-                // Se o botão de apenas pendentes estiver ativo, esconde as linhas publicadas
                 if (apenasPendentesAtivo && !isPendente) {
                     tr.style.display = 'none';
                 } else {
@@ -401,7 +420,6 @@
                 }
             });
 
-            // Se a turma passa na busca de texto E tem linhas visíveis após o filtro, mostra a turma
             if (passaNoTexto && linhasVisiveisNaTurma > 0) {
                 details.style.display = 'block';
                 if (termoBusca !== "" || apenasPendentesAtivo) {
@@ -412,7 +430,6 @@
             }
         });
         
-        // Esconde os blocos de turno inteiros se não houver turmas visíveis dentro deles
         const blocosTurno = document.querySelectorAll('.turno-bloco');
         blocosTurno.forEach(bloco => {
             const turmasVisiveis = bloco.querySelectorAll('details[style*="display: block"]');
@@ -448,6 +465,7 @@
                     }
 
                     let turmasOrganizadas = { "Manhã": {}, "Tarde": {}, "Noite": {} };
+                    totalPendentesGeral = 0; // Reseta o contador global antes de somar
 
                     for (let i = 1; i < dados.length; i++) {
                         const linha = dados[i];
@@ -474,6 +492,15 @@
 
                         if (agora > dataExpiracao) continue; 
 
+                        // Conta quantos pendentes existem nas disciplinas desta linha
+                        const disc1 = linha[3] || "";
+                        const subido1 = linha[4] === "TRUE";
+                        const disc2 = linha[7] || "";
+                        const subido2 = linha[8] === "TRUE";
+
+                        if (disc1.trim() !== "" && !subido1) totalPendentesGeral++;
+                        if (disc2.trim() !== "" && !subido2) totalPendentesGeral++;
+
                         if (!turmasOrganizadas[turno][turma]) {
                             turmasOrganizadas[turno][turma] = [];
                         }
@@ -485,6 +512,7 @@
                     painel.appendChild(criarBlocoTurno("🌇 Turno da Tarde", "bg-tarde", turmasOrganizadas["Tarde"]));
                     painel.appendChild(criarBlocoTurno("🌙 Turno da Noite", "bg-noite", turmasOrganizadas["Noite"]));
                     
+                    atualizarContadorBadge();
                     aplicarFiltros();
                 } catch (erro) {
                     painel.innerHTML = `<div class="erro-msg">🚨 Erro ao processar dados: ${erro.message}</div>`;

@@ -375,24 +375,36 @@
         aplicarFiltros();
     }
 
-    // FILTRO COMBINADO (LUPA + BOTÃO DE PENDENTES)
+    // FILTRO COMBINADO (LUPA + LINHAS INDIVIDUAIS DE PENDENTES)
     function aplicarFiltros() {
         const termoBusca = document.getElementById('input-busca').value.toLowerCase();
         const detalhesTurmas = document.querySelectorAll('details');
         
         detalhesTurmas.forEach(details => {
             const textoTurma = details.innerText.toLowerCase();
-            const contemPendentes = details.getAttribute('data-tem-pendente') === 'true';
-            
-            // Verifica o filtro de texto
             const passaNoTexto = textoTurma.includes(termoBusca);
             
-            // Verifica o filtro do botão de pendentes
-            const passaNoBotao = !apenasPendentesAtivo || contemPendentes;
+            // Filtra as linhas individuais (matérias) dentro da tabela
+            const linhasMateria = details.querySelectorAll('tbody tr');
+            let linhasVisiveisNaTurma = 0;
 
-            if (passaNoTexto && passaNoBotao) {
+            linhasMateria.forEach(tr => {
+                const statusCell = tr.querySelector('.status');
+                const isPendente = statusCell && statusCell.classList.contains('status-pendente');
+                
+                // Se o botão de apenas pendentes estiver ativo, esconde as linhas publicadas
+                if (apenasPendentesAtivo && !isPendente) {
+                    tr.style.display = 'none';
+                } else {
+                    tr.style.display = '';
+                    linhasVisiveisNaTurma++;
+                }
+            });
+
+            // Se a turma passa na busca de texto E tem linhas visíveis após o filtro, mostra a turma
+            if (passaNoTexto && linhasVisiveisNaTurma > 0) {
                 details.style.display = 'block';
-                if (termoBusca !== "") {
+                if (termoBusca !== "" || apenasPendentesAtivo) {
                     details.open = true;
                 }
             } else {
@@ -403,7 +415,7 @@
         // Esconde os blocos de turno inteiros se não houver turmas visíveis dentro deles
         const blocosTurno = document.querySelectorAll('.turno-bloco');
         blocosTurno.forEach(bloco => {
-            const turmasVisiveis = bloco.querySelectorAll('details[style="display: block;"], details:not([style*="display: none"])');
+            const turmasVisiveis = bloco.querySelectorAll('details[style*="display: block"]');
             if (turmasVisiveis.length === 0) {
                 bloco.style.display = 'none';
             } else {
@@ -473,7 +485,6 @@
                     painel.appendChild(criarBlocoTurno("🌇 Turno da Tarde", "bg-tarde", turmasOrganizadas["Tarde"]));
                     painel.appendChild(criarBlocoTurno("🌙 Turno da Noite", "bg-noite", turmasOrganizadas["Noite"]));
                     
-                    // Aplica o filtro atual caso o botão já estivesse ativo
                     aplicarFiltros();
                 } catch (erro) {
                     painel.innerHTML = `<div class="erro-msg">🚨 Erro ao processar dados: ${erro.message}</div>`;
@@ -519,8 +530,6 @@
                     if (disc2.trim() !== "" && !subido2) temPendente = true;
                 });
                 
-                // Marca o elemento com um atributo de controle para o filtro
-                details.setAttribute('data-tem-pendente', temPendente);
                 details.open = temPendente; 
                 
                 const summary = document.createElement("summary");
@@ -601,7 +610,6 @@
         return divTurno;
     }
 
-    // Inicia a aplicação
     window.onload = carregarDados;
 </script>
 

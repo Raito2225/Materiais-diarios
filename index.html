@@ -465,7 +465,7 @@
                     }
 
                     let turmasOrganizadas = { "Manhã": {}, "Tarde": {}, "Noite": {} };
-                    totalPendentesGeral = 0; // Reseta o contador global antes de somar
+                    totalPendentesGeral = 0;
 
                     for (let i = 1; i < dados.length; i++) {
                         const linha = dados[i];
@@ -483,16 +483,16 @@
                         let dataExpiracao = new Date(dataAula.getTime());
 
                         if (turno === "Manhã") {
-                            dataExpiracao.setDate(dataExpiracao.getDate() + 1);
+                            // Manhã: Expira às 12h00 do MESMO dia da aula
                             dataExpiracao.setHours(12, 0, 0, 0);
                         } else {
+                            // Tarde e Noite: Expiram à 00h00 do dia seguinte
                             dataExpiracao.setDate(dataExpiracao.getDate() + 1);
                             dataExpiracao.setHours(0, 0, 0, 0);
                         }
 
                         if (agora > dataExpiracao) continue; 
 
-                        // Conta quantos pendentes existem nas disciplinas desta linha
                         const disc1 = linha[3] || "";
                         const subido1 = linha[4] === "TRUE";
                         const disc2 = linha[7] || "";

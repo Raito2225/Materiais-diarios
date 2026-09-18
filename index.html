@@ -186,7 +186,6 @@
             font-size: 0.85em;
             border-left: 4px solid #ef4444;
             display: inline-block;
-            margin-top: 8px;
         }
 
         .sem-aulas {
@@ -249,11 +248,10 @@
 </div>
 
 <script>
-    // NOVO LINK INSERIDO
     const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=424030956&single=true&output=csv";
     const painel = document.getElementById("painel-dinamico");
 
-    // ----- LÓGICA DO TEMA -----
+    // LÓGICA DO TEMA
     function carregarTemaSalvo() {
         try {
             if (localStorage.getItem('tema-escuro') === 'true') {
@@ -281,7 +279,7 @@
     }
     carregarTemaSalvo();
 
-    // ----- LÓGICA DA LUPA (FILTRO) -----
+    // LÓGICA DA LUPA
     function filtrarPainel() {
         const termoBusca = document.getElementById('input-busca').value.toLowerCase();
         const detalhesTurmas = document.querySelectorAll('details');
@@ -290,7 +288,6 @@
             const textoTurma = details.innerText.toLowerCase();
             if (textoTurma.includes(termoBusca)) {
                 details.style.display = 'block';
-                // Se a pessoa estiver digitando algo para pesquisar, abre a sanfona automaticamente para ela ver
                 if (termoBusca !== "") {
                     details.open = true;
                 }
@@ -299,7 +296,6 @@
             }
         });
         
-        // Esconde o bloco de turno inteiro se todas as turmas dentro dele sumirem
         const blocosTurno = document.querySelectorAll('.turno-bloco');
         blocosTurno.forEach(bloco => {
             const turmasVisiveis = bloco.querySelectorAll('details[style="display: block;"], details:not([style="display: none;"])');
@@ -311,7 +307,7 @@
         });
     }
 
-    // ----- LÓGICA DE DADOS -----
+    // LÓGICA DE DADOS
     function parseDataAula(dataStr) {
         let partes = dataStr.split('/');
         let dia = parseInt(partes[0], 10);
@@ -425,12 +421,15 @@
                 divTabela.className = "tabela-wrapper";
 
                 const tabela = document.createElement("table");
+                
+                // NOVO LAYOUT DE CABEÇALHOS (4 COLUNAS)
                 tabela.innerHTML = `
                     <thead>
                         <tr>
                             <th width="15%">Data da Aula</th>
-                            <th width="40%">Disciplina</th>
-                            <th width="45%">Status no Site</th>
+                            <th width="30%">Disciplina</th>
+                            <th width="20%">Status no Site</th>
+                            <th width="35%">Observação</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -439,7 +438,11 @@
                 const tbody = tabela.querySelector("tbody");
 
                 dadosTurmas[nomeTurma].forEach(linha => {
-                    const dataAula = linha[0];
+                    // Pega os primeiros 5 caracteres da data (ex: 17/09/2026 vira 17/09) para ficar mais limpo visualmente
+                    let dataAula = linha[0];
+                    if(dataAula && dataAula.length >= 5) {
+                        dataAula = dataAula.substring(0, 5);
+                    }
                     
                     const disc1 = linha[3] || "";
                     const subido1 = linha[4] === "TRUE";
@@ -458,7 +461,7 @@
                         let motivoHtml = "";
 
                         if (status) {
-                            statusHtml = `<div class="status status-ok">✅ Publicado</div><div style="font-size: 0.8em; margin-top: 4px;">Em: ${upload}</div>`;
+                            statusHtml = `<div class="status status-ok">✅ Publicado</div><div style="font-size: 0.8em; margin-top: 4px; color: var(--cor-th-text);">Em: ${upload}</div>`;
                         } else {
                             statusHtml = `<div class="status status-pendente">⏳ Pendente</div>`;
                             if (motivoTxt.trim() !== "") {
@@ -466,11 +469,13 @@
                             }
                         }
 
+                        // AGORA CADA INFORMAÇÃO TEM SUA PRÓPRIA CÉLULA (<td>)
                         return `
                             <tr>
                                 <td><strong>${dataAula}</strong></td>
                                 <td><div class="disciplina-caixa">${numDisc}: ${nomeDisc}</div></td>
-                                <td>${statusHtml}${motivoHtml}</td>
+                                <td>${statusHtml}</td>
+                                <td>${motivoHtml}</td>
                             </tr>
                         `;
                     }

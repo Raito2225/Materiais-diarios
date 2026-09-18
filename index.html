@@ -3,109 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Materiais - NTI</title>
+    <title>Painel de Materiais - NTI Quad Concursos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
+        :root {
+            --cor-manha: #f39c12;
+            --cor-tarde: #d35400;
+            --cor-noite: #2c3e50;
+            --cor-fundo: #f4f7f6;
+            --cor-texto: #333;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
             margin: 0;
             padding: 20px;
+            line-height: 1.6;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
         
         h1 {
             color: #1c4587;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            font-size: 1.8em;
         }
-        
-        .secao-turno {
-            background: white;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .cabecalho-turno {
-            padding: 15px 20px;
-            color: white;
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        .bg-manha { background-color: #f39c12; } 
-        .bg-tarde { background-color: #d35400; } 
-        .bg-noite { background-color: #2c3e50; } 
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-            vertical-align: top;
+        /* Estilos dos Turnos */
+        .turno-bloco {
+            margin-bottom: 40px;
         }
-        th { background-color: #f8f9fa; color: #333; font-weight: bold; }
-        tr:hover { background-color: #f1f1f1; }
+        .turno-titulo {
+            padding: 12px 20px;
+            color: white;
+            font-size: 1.3em;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .bg-manha { background-color: var(--cor-manha); } 
+        .bg-tarde { background-color: var(--cor-tarde); } 
+        .bg-noite { background-color: var(--cor-noite); } 
+
+        .turno-conteudo {
+            background: transparent;
+            padding-top: 15px;
+        }
+
+        /* Blocos Expansivos (Turmas) */
+        details {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        summary {
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+            cursor: pointer;
+            background-color: white;
+            color: #1c4587;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            list-style: none;
+            user-select: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+        summary::after {
+            content: "▼";
+            font-size: 0.8em;
+            color: #888;
+            transition: transform 0.3s ease;
+        }
+        details[open] summary::after {
+            transform: rotate(180deg);
+        }
+        details[open] summary {
+            border-bottom: 1px solid #edf2f7;
+            background-color: #f8fafc;
+        }
+
+        /* Tabelas Internas */
+        .tabela-wrapper {
+            padding: 0;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8em;
+            letter-spacing: 0.5px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #f8fafc; }
         
         .disciplina-caixa {
-            background-color: #e9ecef;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background-color: #e2e8f0;
+            color: #334155;
+            padding: 4px 10px;
+            border-radius: 6px;
             display: inline-block;
-            margin-bottom: 4px;
+            margin: 2px 0;
             font-size: 0.9em;
+            font-weight: 500;
         }
         
+        /* Status */
         .status {
             padding: 6px 12px;
             border-radius: 20px;
             font-weight: bold;
             font-size: 0.85em;
-            display: inline-block;
-            margin-bottom: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-        .status-ok { background-color: #d4edda; color: #155724; }
-        .status-pendente { background-color: #fff3cd; color: #856404; }
+        .status-ok { background-color: #dcfce7; color: #166534; }
+        .status-pendente { background-color: #fef08a; color: #854d0e; }
         
         .motivo-caixa {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 6px 10px;
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 8px 12px;
             border-radius: 6px;
             font-size: 0.85em;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #ef4444;
             display: inline-block;
-            margin-top: 5px;
+            margin-top: 8px;
             max-width: 100%;
-            word-wrap: break-word;
         }
 
-        .arquivos {
-            white-space: pre-wrap; 
-            font-size: 0.9em;
-            color: #555;
-        }
         .sem-aulas {
             padding: 20px;
             text-align: center;
-            color: #777;
-            font-style: italic;
-        }
-        
-        .aviso-erro {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 20px;
-            text-align: center;
+            color: #64748b;
+            background: white;
             border-radius: 8px;
-            font-weight: bold;
-            margin-top: 20px;
-            border: 2px solid #ffeeba;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
     </style>
 </head>
@@ -114,14 +180,22 @@
 <div class="container">
     <h1>Painel de Upload de Materiais</h1>
     <div id="painel-dinamico">
-        <p style="text-align: center; color: #666;">Carregando os materiais...</p>
+        <p style="text-align: center; color: #666;">Buscando dados no sistema...</p>
     </div>
 </div>
 
 <script>
-    // Nova URL CSV fornecida
     const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=1550988071&single=true&output=csv";
     const painel = document.getElementById("painel-dinamico");
+
+    // Função para transformar a data da planilha (DD/MM/YYYY) em um objeto Date do JS
+    function parseDataAula(dataStr) {
+        let partes = dataStr.split('/');
+        let dia = parseInt(partes[0], 10);
+        let mes = parseInt(partes[1], 10) - 1; 
+        let ano = partes.length > 2 ? parseInt(partes[2], 10) : new Date().getFullYear();
+        return new Date(ano, mes, dia);
+    }
 
     function carregarDados() {
         Papa.parse(urlCSV, {
@@ -129,118 +203,146 @@
             header: false,
             complete: function(results) {
                 const dados = results.data;
+                const agora = new Date();
                 
-                let manha = [];
-                let tarde = [];
-                let noite = [];
-
-                if (dados.length <= 1) {
-                    painel.innerHTML = `
-                        <div class="aviso-erro">
-                            ⚠️ A planilha está conectada com sucesso, mas não encontrei nenhuma linha de dados preenchida na aba <b>Controle_Materiais</b>.<br>
-                            Preencha pelo menos uma linha com data, turno e turma para os blocos aparecem aqui!
-                        </div>
-                    `;
-                    return;
-                }
+                // Estrutura para agrupar: Turno -> Turma -> [Linhas]
+                let turmasOrganizadas = {
+                    "Manhã": {},
+                    "Tarde": {},
+                    "Noite": {}
+                };
 
                 for (let i = 1; i < dados.length; i++) {
                     const linha = dados[i];
                     if (!linha[0] || linha[0].trim() === "") continue;
 
-                    const turno = linha[1] ? linha[1].trim() : "";
-                    if (turno === "Manhã") manha.push(linha);
-                    else if (turno === "Tarde") tarde.push(linha);
-                    else if (turno === "Noite") noite.push(linha);
+                    let dataStr = linha[0].trim();
+                    let turno = linha[1] ? linha[1].trim() : "";
+                    let turma = linha[2] ? linha[2].trim() : "Turma Não Informada";
+
+                    if (!["Manhã", "Tarde", "Noite"].includes(turno)) continue;
+
+                    // Lógica de Vencimento
+                    let dataAula = parseDataAula(dataStr);
+                    let dataExpiracao = new Date(dataAula.getTime());
+
+                    if (turno === "Manhã") {
+                        // Manhã: expira às 12h do dia SEGUINTE à aula
+                        dataExpiracao.setDate(dataExpiracao.getDate() + 1);
+                        dataExpiracao.setHours(12, 0, 0, 0);
+                    } else {
+                        // Tarde e Noite: expira às 00h do MESMO dia (ou seja, meia-noite virando pro dia seguinte)
+                        dataExpiracao.setDate(dataExpiracao.getDate() + 1);
+                        dataExpiracao.setHours(0, 0, 0, 0);
+                    }
+
+                    // Se a data/hora atual já passou da data de expiração calculada, ignora a linha
+                    if (agora > dataExpiracao) {
+                        continue; 
+                    }
+
+                    // Se passou pelo filtro, adiciona ao grupo correto
+                    if (!turmasOrganizadas[turno][turma]) {
+                        turmasOrganizadas[turno][turma] = [];
+                    }
+                    turmasOrganizadas[turno][turma].push(linha);
                 }
 
                 painel.innerHTML = ""; 
 
-                painel.appendChild(criarSecaoTurno("☀️ Manhã", "bg-manha", manha));
-                painel.appendChild(criarSecaoTurno("🌇 Tarde", "bg-tarde", tarde));
-                painel.appendChild(criarSecaoTurno("🌙 Noite", "bg-noite", noite));
-            },
-            error: function(erro) {
-                painel.innerHTML = `
-                    <div class="aviso-erro" style="background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;">
-                        🚨 Erro ao ler a planilha. Verifique se o link CSV está correto e se a aba foi publicada na web.
-                    </div>
-                `;
+                painel.appendChild(criarBlocoTurno("☀️ Turno da Manhã", "bg-manha", turmasOrganizadas["Manhã"]));
+                painel.appendChild(criarBlocoTurno("🌇 Turno da Tarde", "bg-tarde", turmasOrganizadas["Tarde"]));
+                painel.appendChild(criarBlocoTurno("🌙 Turno da Noite", "bg-noite", turmasOrganizadas["Noite"]));
             }
         });
     }
 
-    function criarSecaoTurno(titulo, classeCor, linhasDeDados) {
-        const divSecao = document.createElement("div");
-        divSecao.className = "secao-turno";
+    function criarBlocoTurno(titulo, classeCor, dadosTurmas) {
+        const divTurno = document.createElement("div");
+        divTurno.className = "turno-bloco";
 
         const divCabecalho = document.createElement("div");
-        divCabecalho.className = `cabecalho-turno ${classeCor}`;
+        divCabecalho.className = `turno-titulo ${classeCor}`;
         divCabecalho.innerText = titulo;
-        divSecao.appendChild(divCabecalho);
+        divTurno.appendChild(divCabecalho);
 
-        if (linhasDeDados.length === 0) {
+        const divConteudo = document.createElement("div");
+        divConteudo.className = "turno-conteudo";
+
+        const nomesTurmas = Object.keys(dadosTurmas);
+
+        if (nomesTurmas.length === 0) {
             const divVazia = document.createElement("div");
             divVazia.className = "sem-aulas";
-            divVazia.innerText = "Nenhuma aula registrada para este turno ainda.";
-            divSecao.appendChild(divVazia);
-            return divSecao;
+            divVazia.innerText = "Nenhum material pendente ou disponível para este turno.";
+            divConteudo.appendChild(divVazia);
+        } else {
+            // Cria um bloco expansivo (details) para cada turma do turno
+            nomesTurmas.forEach(nomeTurma => {
+                const details = document.createElement("details");
+                details.open = true; // Mantém aberto por padrão (mude para false se quiser fechado)
+                
+                const summary = document.createElement("summary");
+                summary.innerText = nomeTurma;
+                details.appendChild(summary);
+
+                const divTabela = document.createElement("div");
+                divTabela.className = "tabela-wrapper";
+
+                const tabela = document.createElement("table");
+                tabela.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th width="15%">Data da Aula</th>
+                            <th width="45%">Disciplinas</th>
+                            <th width="40%">Status no Site</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+
+                const tbody = tabela.querySelector("tbody");
+
+                dadosTurmas[nomeTurma].forEach(linha => {
+                    const dataAula = linha[0];
+                    const disc1 = linha[3] ? `<div class="disciplina-caixa">1º: ${linha[3]}</div>` : "";
+                    const disc2 = linha[4] ? `<div class="disciplina-caixa">2º: ${linha[4]}</div>` : "";
+                    const subido = linha[6] === "TRUE";
+                    const dataUpload = linha[7] || "";
+                    const motivo = linha[8] || ""; 
+
+                    let statusHtml = "";
+                    let motivoHtml = "";
+
+                    if (subido) {
+                        statusHtml = `<div class="status status-ok">✅ Publicado</div><div style="font-size: 0.8em; color: #64748b; margin-top: 4px;">Em: ${dataUpload}</div>`;
+                    } else {
+                        statusHtml = `<div class="status status-pendente">⏳ Pendente</div>`;
+                        if (motivo.trim() !== "") {
+                            motivoHtml = `<div class="motivo-caixa">⚠️ ${motivo}</div>`;
+                        }
+                    }
+
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td><strong>${dataAula}</strong></td>
+                        <td>${disc1} ${disc2}</td>
+                        <td>
+                            ${statusHtml}
+                            ${motivoHtml}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                divTabela.appendChild(tabela);
+                details.appendChild(divTabela);
+                divConteudo.appendChild(details);
+            });
         }
 
-        const tabela = document.createElement("table");
-        tabela.innerHTML = `
-            <thead>
-                <tr>
-                    <th width="10%">Data</th>
-                    <th width="20%">Turma</th>
-                    <th width="20%">Disciplinas</th>
-                    <th width="30%">Arquivos Disponíveis</th>
-                    <th width="20%">Status</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
-
-        const tbody = tabela.querySelector("tbody");
-
-        linhasDeDados.forEach(linha => {
-            const dataAula = linha[0] || "";
-            const turma = linha[2] || "";
-            const disc1 = linha[3] ? `<div class="disciplina-caixa">1º: ${linha[3]}</div>` : "";
-            const disc2 = linha[4] ? `<div class="disciplina-caixa">2º: ${linha[4]}</div>` : "";
-            const arquivos = linha[5] || "";
-            const subido = linha[6] === "TRUE";
-            const dataUpload = linha[7] || "";
-            const motivo = linha[8] || ""; 
-
-            let statusHtml = "";
-            let motivoHtml = "";
-
-            if (subido) {
-                statusHtml = `<div class="status status-ok">✅ No Site</div><br><small>${dataUpload}</small>`;
-            } else {
-                statusHtml = `<div class="status status-pendente">⏳ Pendente</div>`;
-                if (motivo.trim() !== "") {
-                    motivoHtml = `<div class="motivo-caixa">⚠️ ${motivo}</div>`;
-                }
-            }
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><strong>${dataAula}</strong></td>
-                <td>${turma}</td>
-                <td>${disc1}<br>${disc2}</td>
-                <td class="arquivos">${arquivos}</td>
-                <td>
-                    ${statusHtml}
-                    ${motivoHtml}
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        divSecao.appendChild(tabela);
-        return divSecao;
+        divTurno.appendChild(divConteudo);
+        return divTurno;
     }
 
     window.onload = carregarDados;

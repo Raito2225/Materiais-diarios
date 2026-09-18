@@ -23,10 +23,7 @@
             line-height: 1.6;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1000px; margin: 0 auto; }
         
         h1 {
             color: #1c4587;
@@ -39,10 +36,7 @@
             font-size: 1.8em;
         }
 
-        /* Estilos dos Turnos */
-        .turno-bloco {
-            margin-bottom: 40px;
-        }
+        .turno-bloco { margin-bottom: 40px; }
         .turno-titulo {
             padding: 12px 20px;
             color: white;
@@ -50,20 +44,13 @@
             font-weight: 600;
             border-radius: 8px 8px 0 0;
             margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
         .bg-manha { background-color: var(--cor-manha); } 
         .bg-tarde { background-color: var(--cor-tarde); } 
         .bg-noite { background-color: var(--cor-noite); } 
 
-        .turno-conteudo {
-            background: transparent;
-            padding-top: 15px;
-        }
+        .turno-conteudo { padding-top: 15px; }
 
-        /* Blocos Expansivos (Turmas) */
         details {
             background: white;
             border-radius: 8px;
@@ -77,7 +64,6 @@
             font-weight: 600;
             font-size: 1.1em;
             cursor: pointer;
-            background-color: white;
             color: #1c4587;
             display: flex;
             justify-content: space-between;
@@ -85,28 +71,20 @@
             list-style: none;
             user-select: none;
         }
-        summary::-webkit-details-marker {
-            display: none;
-        }
+        summary::-webkit-details-marker { display: none; }
         summary::after {
             content: "▼";
             font-size: 0.8em;
             color: #888;
             transition: transform 0.3s ease;
         }
-        details[open] summary::after {
-            transform: rotate(180deg);
-        }
+        details[open] summary::after { transform: rotate(180deg); }
         details[open] summary {
             border-bottom: 1px solid #edf2f7;
             background-color: #f8fafc;
         }
 
-        /* Tabelas Internas */
-        .tabela-wrapper {
-            padding: 0;
-            overflow-x: auto;
-        }
+        .tabela-wrapper { overflow-x: auto; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -124,31 +102,26 @@
             font-weight: 600;
             text-transform: uppercase;
             font-size: 0.8em;
-            letter-spacing: 0.5px;
         }
         tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #f8fafc; }
+        tr:hover { background-color: #f9fafb; }
         
         .disciplina-caixa {
             background-color: #e2e8f0;
             color: #334155;
-            padding: 4px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             display: inline-block;
-            margin: 2px 0;
             font-size: 0.9em;
-            font-weight: 500;
+            font-weight: 600;
         }
         
-        /* Status */
         .status {
             padding: 6px 12px;
             border-radius: 20px;
             font-weight: bold;
             font-size: 0.85em;
             display: inline-flex;
-            align-items: center;
-            gap: 6px;
         }
         .status-ok { background-color: #dcfce7; color: #166534; }
         .status-pendente { background-color: #fef08a; color: #854d0e; }
@@ -162,7 +135,6 @@
             border-left: 4px solid #ef4444;
             display: inline-block;
             margin-top: 8px;
-            max-width: 100%;
         }
 
         .sem-aulas {
@@ -188,7 +160,6 @@
     const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=1550988071&single=true&output=csv";
     const painel = document.getElementById("painel-dinamico");
 
-    // Função para transformar a data da planilha (DD/MM/YYYY) em um objeto Date do JS
     function parseDataAula(dataStr) {
         let partes = dataStr.split('/');
         let dia = parseInt(partes[0], 10);
@@ -205,12 +176,7 @@
                 const dados = results.data;
                 const agora = new Date();
                 
-                // Estrutura para agrupar: Turno -> Turma -> [Linhas]
-                let turmasOrganizadas = {
-                    "Manhã": {},
-                    "Tarde": {},
-                    "Noite": {}
-                };
+                let turmasOrganizadas = { "Manhã": {}, "Tarde": {}, "Noite": {} };
 
                 for (let i = 1; i < dados.length; i++) {
                     const linha = dados[i];
@@ -222,26 +188,19 @@
 
                     if (!["Manhã", "Tarde", "Noite"].includes(turno)) continue;
 
-                    // Lógica de Vencimento
                     let dataAula = parseDataAula(dataStr);
                     let dataExpiracao = new Date(dataAula.getTime());
 
                     if (turno === "Manhã") {
-                        // Manhã: expira às 12h do dia SEGUINTE à aula
                         dataExpiracao.setDate(dataExpiracao.getDate() + 1);
                         dataExpiracao.setHours(12, 0, 0, 0);
                     } else {
-                        // Tarde e Noite: expira às 00h do MESMO dia (ou seja, meia-noite virando pro dia seguinte)
                         dataExpiracao.setDate(dataExpiracao.getDate() + 1);
                         dataExpiracao.setHours(0, 0, 0, 0);
                     }
 
-                    // Se a data/hora atual já passou da data de expiração calculada, ignora a linha
-                    if (agora > dataExpiracao) {
-                        continue; 
-                    }
+                    if (agora > dataExpiracao) continue; 
 
-                    // Se passou pelo filtro, adiciona ao grupo correto
                     if (!turmasOrganizadas[turno][turma]) {
                         turmasOrganizadas[turno][turma] = [];
                     }
@@ -249,7 +208,6 @@
                 }
 
                 painel.innerHTML = ""; 
-
                 painel.appendChild(criarBlocoTurno("☀️ Turno da Manhã", "bg-manha", turmasOrganizadas["Manhã"]));
                 painel.appendChild(criarBlocoTurno("🌇 Turno da Tarde", "bg-tarde", turmasOrganizadas["Tarde"]));
                 painel.appendChild(criarBlocoTurno("🌙 Turno da Noite", "bg-noite", turmasOrganizadas["Noite"]));
@@ -277,10 +235,9 @@
             divVazia.innerText = "Nenhum material pendente ou disponível para este turno.";
             divConteudo.appendChild(divVazia);
         } else {
-            // Cria um bloco expansivo (details) para cada turma do turno
             nomesTurmas.forEach(nomeTurma => {
                 const details = document.createElement("details");
-                details.open = true; // Mantém aberto por padrão (mude para false se quiser fechado)
+                details.open = true; 
                 
                 const summary = document.createElement("summary");
                 summary.innerText = nomeTurma;
@@ -294,8 +251,8 @@
                     <thead>
                         <tr>
                             <th width="15%">Data da Aula</th>
-                            <th width="45%">Disciplinas</th>
-                            <th width="40%">Status no Site</th>
+                            <th width="40%">Disciplina</th>
+                            <th width="45%">Status no Site</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -305,34 +262,46 @@
 
                 dadosTurmas[nomeTurma].forEach(linha => {
                     const dataAula = linha[0];
-                    const disc1 = linha[3] ? `<div class="disciplina-caixa">1º: ${linha[3]}</div>` : "";
-                    const disc2 = linha[4] ? `<div class="disciplina-caixa">2º: ${linha[4]}</div>` : "";
-                    const subido = linha[6] === "TRUE";
-                    const dataUpload = linha[7] || "";
-                    const motivo = linha[8] || ""; 
+                    
+                    // Extração dos dados da Disciplina 1 (colunas 3 a 6)
+                    const disc1 = linha[3] || "";
+                    const subido1 = linha[4] === "TRUE";
+                    const dataUpload1 = linha[5] || "";
+                    const motivo1 = linha[6] || ""; 
 
-                    let statusHtml = "";
-                    let motivoHtml = "";
+                    // Extração dos dados da Disciplina 2 (colunas 7 a 10)
+                    const disc2 = linha[7] || "";
+                    const subido2 = linha[8] === "TRUE";
+                    const dataUpload2 = linha[9] || "";
+                    const motivo2 = linha[10] || ""; 
 
-                    if (subido) {
-                        statusHtml = `<div class="status status-ok">✅ Publicado</div><div style="font-size: 0.8em; color: #64748b; margin-top: 4px;">Em: ${dataUpload}</div>`;
-                    } else {
-                        statusHtml = `<div class="status status-pendente">⏳ Pendente</div>`;
-                        if (motivo.trim() !== "") {
-                            motivoHtml = `<div class="motivo-caixa">⚠️ ${motivo}</div>`;
+                    // Função para gerar as linhas da tabela dinamicamente
+                    function gerarLinhaMateria(nomeDisc, numDisc, status, upload, motivoTxt) {
+                        if (nomeDisc.trim() === "") return ""; // Pula se a matéria estiver em branco
+
+                        let statusHtml = "";
+                        let motivoHtml = "";
+
+                        if (status) {
+                            statusHtml = `<div class="status status-ok">✅ Publicado</div><div style="font-size: 0.8em; color: #64748b; margin-top: 4px;">Em: ${upload}</div>`;
+                        } else {
+                            statusHtml = `<div class="status status-pendente">⏳ Pendente</div>`;
+                            if (motivoTxt.trim() !== "") {
+                                motivoHtml = `<div class="motivo-caixa">⚠️ ${motivoTxt}</div>`;
+                            }
                         }
+
+                        return `
+                            <tr>
+                                <td><strong>${dataAula}</strong></td>
+                                <td><div class="disciplina-caixa">${numDisc}: ${nomeDisc}</div></td>
+                                <td>${statusHtml}${motivoHtml}</td>
+                            </tr>
+                        `;
                     }
 
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td><strong>${dataAula}</strong></td>
-                        <td>${disc1} ${disc2}</td>
-                        <td>
-                            ${statusHtml}
-                            ${motivoHtml}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
+                    tbody.innerHTML += gerarLinhaMateria(disc1, "1º", subido1, dataUpload1, motivo1);
+                    tbody.innerHTML += gerarLinhaMateria(disc2, "2º", subido2, dataUpload2, motivo2);
                 });
 
                 divTabela.appendChild(tabela);

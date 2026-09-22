@@ -28,6 +28,8 @@
             --cor-input-border: #cbd5e1;
             --cor-btn-filtro-bg: #e2e8f0;
             --cor-btn-filtro-texto: #334155;
+            --cor-progresso-bg: #e2e8f0;
+            --cor-progresso-barra: #22c55e;
         }
 
         /* Tema Escuro */
@@ -46,6 +48,8 @@
             --cor-input-border: #4a5568;
             --cor-btn-filtro-bg: #4a5568;
             --cor-btn-filtro-texto: #e2e8f0;
+            --cor-progresso-bg: #2d3748;
+            --cor-progresso-barra: #4ade80;
         }
 
         body {
@@ -84,7 +88,7 @@
             padding: 8px 20px;
             border-radius: 30px;
             width: fit-content;
-            margin: 0 auto 25px auto;
+            margin: 0 auto 20px auto;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             transition: background-color 0.3s, color 0.3s;
         }
@@ -92,6 +96,38 @@
             color: var(--cor-titulo-h1);
             font-size: 1.1em;
             font-variant-numeric: tabular-nums;
+        }
+
+        /* Barra de Progresso do Dia */
+        .progresso-container {
+            background-color: var(--cor-container-bg);
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: background-color 0.3s;
+        }
+        .progresso-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--cor-texto);
+        }
+        .progresso-barra-fundo {
+            width: 100%;
+            height: 12px;
+            background-color: var(--cor-progresso-bg);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .progresso-barra-preenchimento {
+            height: 100%;
+            background-color: var(--cor-progresso-barra);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 6px;
         }
 
         /* Controles de Busca e Filtro */
@@ -104,7 +140,7 @@
         }
         .busca-input {
             flex: 1;
-            max-width: 400px;
+            max-width: 320px;
             padding: 14px 20px;
             font-size: 1.05em;
             border: 2px solid var(--cor-input-border);
@@ -125,9 +161,9 @@
             margin-bottom: 30px;
         }
 
-        /* Botões de Filtro */
-        .btn-filtro {
-            padding: 0 20px;
+        /* Botões de Filtro e Master Toggle */
+        .btn-acao {
+            padding: 0 18px;
             font-size: 0.95em;
             font-weight: 600;
             border: 2px solid var(--cor-input-border);
@@ -143,7 +179,7 @@
             white-space: nowrap;
             height: 50px;
         }
-        .btn-filtro:hover { opacity: 0.9; }
+        .btn-acao:hover { opacity: 0.9; }
         
         #btn-filtro-pendentes.ativo {
             background-color: #fef08a;
@@ -347,22 +383,37 @@
         <span>⏱️ Atualiza automaticamente em:</span>
         <strong id="contador-tempo">05:00</strong>
     </div>
+
+    <!-- Barra de Progresso Geral do Dia -->
+    <div class="progresso-container">
+        <div class="progresso-info">
+            <span>📊 Progresso de Publicação do Dia</span>
+            <span id="progresso-texto">0% Concluído (0/0)</span>
+        </div>
+        <div class="progresso-barra-fundo">
+            <div id="progresso-preenchimento" class="progresso-barra-preenchimento"></div>
+        </div>
+    </div>
     
-    <!-- Controles (Busca + Filtros) -->
+    <!-- Controles (Busca + Filtros + Master Toggle) -->
     <div class="controles-container">
-        <input type="text" id="input-busca" class="busca-input" placeholder="🔍 Pesquisar por turma ou disciplina..." onkeyup="aplicarFiltros()">
+        <input type="text" id="input-busca" class="busca-input" placeholder="🔍 Pesquisar turma/disciplina..." onkeyup="aplicarFiltros()">
         
-        <button id="btn-filtro-pendentes" class="btn-filtro" onclick="alternarFiltro('pendentes')">
-            ⏳ Apenas Pendentes <span id="badge-pendentes" class="badge-contador">0</span>
+        <button id="btn-filtro-pendentes" class="btn-acao" onclick="alternarFiltro('pendentes')">
+            ⏳ Pendentes <span id="badge-pendentes" class="badge-contador">0</span>
         </button>
         
-        <button id="btn-filtro-publicados" class="btn-filtro" onclick="alternarFiltro('publicados')">
-            ✅ Já Publicados
+        <button id="btn-filtro-publicados" class="btn-acao" onclick="alternarFiltro('publicados')">
+            ✅ Publicados
+        </button>
+
+        <button id="btn-master-toggle" class="btn-acao" onclick="alternarExpandirTudo()">
+            📂 Expandir Tudo
         </button>
     </div>
     
     <div class="instrucao-filtros">
-        👆 <em>Clique nos botões de filtro acima para alternar a visualização do painel.</em>
+        👆 <em>Utilize os botões acima para filtrar ou expandir/recolher todas as turmas do painel.</em>
     </div>
 
     <div id="painel-dinamico">
@@ -381,6 +432,9 @@
 
     let filtroAtivo = null; 
     let totalPendentesGeral = 0;
+    let totalMateriaisGeral = 0;
+    let totalPublicadosGeral = 0;
+    let tudoExpandido = false;
 
     // LÓGICA DO CRONÔMETRO (5 minutos = 300 segundos)
     let tempoRestante = 300; 
@@ -430,6 +484,38 @@
         }
     }
     carregarTemaSalvo();
+
+    // BOTÃO MESTRE: EXPANDIR / RECOLHER TUDO
+    function alternarExpandirTudo() {
+        const detalhesTurmas = document.querySelectorAll('details');
+        const btnMaster = document.getElementById('btn-master-toggle');
+        
+        tudoExpandido = !tudoExpandido;
+        
+        detalhesTurmas.forEach(details => {
+            // Só altera se a turma estiver visível na tela
+            if (details.style.display !== 'none') {
+                details.open = tudoExpandido;
+            }
+        });
+
+        if (tudoExpandido) {
+            btnMaster.innerHTML = '📁 Recolher Tudo';
+        } else {
+            btnMaster.innerHTML = '📂 Expandir Tudo';
+        }
+    }
+
+    // ATUALIZAÇÃO DA BARRA DE PROGRESSO
+    function atualizarBarraProgresso() {
+        let porcentagem = 0;
+        if (totalMateriaisGeral > 0) {
+            porcentagem = Math.round((totalPublicadosGeral / totalMateriaisGeral) * 100);
+        }
+        
+        document.getElementById('progresso-texto').innerText = `${porcentagem}% Concluído (${totalPublicadosGeral}/${totalMateriaisGeral})`;
+        document.getElementById('progresso-preenchimento').style.width = `${porcentagem}%`;
+    }
 
     // GERENCIAMENTO DOS FILTROS (EXCLUSIVOS)
     function alternarFiltro(tipo) {
@@ -537,6 +623,8 @@
 
                     let turmasOrganizadas = { "Manhã": {}, "Tarde": {}, "Noite": {} };
                     totalPendentesGeral = 0;
+                    totalMateriaisGeral = 0;
+                    totalPublicadosGeral = 0;
 
                     for (let i = 1; i < dados.length; i++) {
                         const linha = dados[i];
@@ -567,8 +655,19 @@
                         const disc2 = linha[7] || "";
                         const subido2 = linha[8] === "TRUE";
 
-                        if (disc1.trim() !== "" && !subido1) totalPendentesGeral++;
-                        if (disc2.trim() !== "" && !subido2) totalPendentesGeral++;
+                        // Contabiliza Disciplina 1
+                        if (disc1.trim() !== "") {
+                            totalMateriaisGeral++;
+                            if (subido1) totalPublicadosGeral++;
+                            else totalPendentesGeral++;
+                        }
+
+                        // Contabiliza Disciplina 2
+                        if (disc2.trim() !== "") {
+                            totalMateriaisGeral++;
+                            if (subido2) totalPublicadosGeral++;
+                            else totalPendentesGeral++;
+                        }
 
                         if (!turmasOrganizadas[turno][turma]) {
                             turmasOrganizadas[turno][turma] = [];
@@ -582,6 +681,7 @@
                     painel.appendChild(criarBlocoTurno("Noite", "bg-noite", turmasOrganizadas["Noite"]));
                     
                     atualizarContadorBadge();
+                    atualizarBarraProgresso();
                     aplicarFiltros();
                 } catch (erro) {
                     painel.innerHTML = `<div class="erro-msg">🚨 Erro ao processar dados: ${erro.message}</div>`;
@@ -597,7 +697,6 @@
         const divTurno = document.createElement("div");
         divTurno.className = "turno-bloco";
 
-        // Conta quantos pendentes existem especificamente neste turno
         let pendentesNoTurno = 0;
         Object.keys(dadosTurmas).forEach(nomeTurma => {
             dadosTurmas[nomeTurma].forEach(linha => {
@@ -647,7 +746,7 @@
                     if (disc2.trim() !== "" && !subido2) temPendente = true;
                 });
                 
-                details.open = temPendente; 
+                details.open = tudoExpandido ? true : temPendente; 
                 
                 const summary = document.createElement("summary");
                 summary.innerText = nomeTurma;

@@ -84,7 +84,7 @@
             padding: 8px 20px;
             border-radius: 30px;
             width: fit-content;
-            margin: 0 auto 30px auto;
+            margin: 0 auto 25px auto;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             transition: background-color 0.3s, color 0.3s;
         }
@@ -99,12 +99,12 @@
             display: flex;
             gap: 12px;
             justify-content: center;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
         }
         .busca-input {
             flex: 1;
-            max-width: 500px;
+            max-width: 400px;
             padding: 14px 20px;
             font-size: 1.05em;
             border: 2px solid var(--cor-input-border);
@@ -117,10 +117,18 @@
         }
         .busca-input:focus { border-color: var(--cor-titulo-h1); }
 
-        /* Botão de Filtro "Apenas Pendentes" com Badge */
+        /* Instrução dos Filtros */
+        .instrucao-filtros {
+            text-align: center;
+            font-size: 0.9em;
+            color: var(--cor-th-text);
+            margin-bottom: 30px;
+        }
+
+        /* Botões de Filtro */
         .btn-filtro {
             padding: 0 20px;
-            font-size: 1em;
+            font-size: 0.95em;
             font-weight: 600;
             border: 2px solid var(--cor-input-border);
             border-radius: 30px;
@@ -133,13 +141,23 @@
             align-items: center;
             gap: 8px;
             white-space: nowrap;
+            height: 50px;
         }
         .btn-filtro:hover { opacity: 0.9; }
-        .btn-filtro.ativo {
+        
+        /* Botão Pendentes Ativo (Amarelo) */
+        #btn-filtro-pendentes.ativo {
             background-color: #fef08a;
             color: #854d0e;
             border-color: #eab308;
         }
+        /* Botão Publicados Ativo (Verde) */
+        #btn-filtro-publicados.ativo {
+            background-color: #dcfce7;
+            color: #166534;
+            border-color: #22c55e;
+        }
+
         .badge-contador {
             background-color: #ef4444;
             color: white;
@@ -148,7 +166,7 @@
             font-size: 0.85em;
             font-weight: bold;
         }
-        .btn-filtro.ativo .badge-contador {
+        #btn-filtro-pendentes.ativo .badge-contador {
             background-color: #ca8a04;
             color: white;
         }
@@ -319,12 +337,21 @@
         <strong id="contador-tempo">05:00</strong>
     </div>
     
-    <!-- Controles (Busca + Botão Apenas Pendentes com Contador) -->
+    <!-- Controles (Busca + Filtros) -->
     <div class="controles-container">
         <input type="text" id="input-busca" class="busca-input" placeholder="🔍 Pesquisar por turma ou disciplina..." onkeyup="aplicarFiltros()">
-        <button id="btn-filtro-pendentes" class="btn-filtro" onclick="alternarFiltroPendentes()">
+        
+        <button id="btn-filtro-pendentes" class="btn-filtro" onclick="alternarFiltro('pendentes')">
             ⏳ Apenas Pendentes <span id="badge-pendentes" class="badge-contador">0</span>
         </button>
+        
+        <button id="btn-filtro-publicados" class="btn-filtro" onclick="alternarFiltro('publicados')">
+            ✅ Já Publicados
+        </button>
+    </div>
+    
+    <div class="instrucao-filtros">
+        👆 <em>Clique nos botões de filtro acima para alternar a visualização do painel.</em>
     </div>
 
     <div id="painel-dinamico">
@@ -341,7 +368,7 @@
     const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQzOpsfYYKsQDhGX8YKRql5WSY1J-DVc8aRTm2jOc9qD2LnV21KBE4ZoeZFzubJd2N28T7z02FkPP_V/pub?gid=424030956&single=true&output=csv";
     const painel = document.getElementById("painel-dinamico");
 
-    let apenasPendentesAtivo = false;
+    let filtroAtivo = null; // Pode ser 'pendentes', 'publicados' ou null (mostrar tudo)
     let totalPendentesGeral = 0;
 
     // LÓGICA DO CRONÔMETRO (5 minutos = 300 segundos)
@@ -393,17 +420,27 @@
     }
     carregarTemaSalvo();
 
-    // BOTÃO FILTRO "APENAS PENDENTES"
-    function alternarFiltroPendentes() {
-        apenasPendentesAtivo = !apenasPendentesAtivo;
-        const btn = document.getElementById('btn-filtro-pendentes');
-        
-        if (apenasPendentesAtivo) {
-            btn.classList.add('ativo');
+    // GERENCIAMENTO DOS FILTROS (EXCLUSIVOS)
+    function alternarFiltro(tipo) {
+        const btnPendentes = document.getElementById('btn-filtro-pendentes');
+        const btnPublicados = document.getElementById('btn-filtro-publicados');
+
+        if (filtroAtivo === tipo) {
+            // Se clicar no mesmo botão que já está ativo, desliga o filtro (mostra tudo)
+            filtroAtivo = null;
+            btnPendentes.classList.remove('ativo');
+            btnPublicados.classList.remove('ativo');
         } else {
-            btn.classList.remove('ativo');
+            // Ativa o novo filtro e desativa o outro
+            filtroAtivo = tipo;
+            if (tipo === 'pendentes') {
+                btnPendentes.classList.add('ativo');
+                btnPublicados.classList.remove('ativo');
+            } else {
+                btnPublicados.classList.add('ativo');
+                btnPendentes.classList.remove('ativo');
+            }
         }
-        
         aplicarFiltros();
     }
 
@@ -412,7 +449,7 @@
         document.getElementById('badge-pendentes').innerText = totalPendentesGeral;
     }
 
-    // FILTRO COMBINADO (LUPA + LINHAS INDIVIDUAIS DE PENDENTES)
+    // FILTRO COMBINADO (LUPA + BOTÕES DE FILTRAGEM)
     function aplicarFiltros() {
         const termoBusca = document.getElementById('input-busca').value.toLowerCase();
         const detalhesTurmas = document.querySelectorAll('details');
@@ -427,18 +464,27 @@
             linhasMateria.forEach(tr => {
                 const statusCell = tr.querySelector('.status');
                 const isPendente = statusCell && statusCell.classList.contains('status-pendente');
+                const isPublicado = statusCell && statusCell.classList.contains('status-ok');
                 
-                if (apenasPendentesAtivo && !isPendente) {
-                    tr.style.display = 'none';
-                } else {
+                let mostrarLinha = true;
+
+                if (filtroAtivo === 'pendentes' && !isPendente) {
+                    mostrarLinha = false;
+                } else if (filtroAtivo === 'publicados' && !isPublicado) {
+                    mostrarLinha = false;
+                }
+
+                if (mostrarLinha) {
                     tr.style.display = '';
                     linhasVisiveisNaTurma++;
+                } else {
+                    tr.style.display = 'none';
                 }
             });
 
             if (passaNoTexto && linhasVisiveisNaTurma > 0) {
                 details.style.display = 'block';
-                if (termoBusca !== "" || apenasPendentesAtivo) {
+                if (termoBusca !== "" || filtroAtivo !== null) {
                     details.open = true;
                 }
             } else {
@@ -499,10 +545,8 @@
                         let dataExpiracao = new Date(dataAula.getTime());
 
                         if (turno === "Manhã") {
-                            // Manhã: Expira às 12h00 do MESMO dia da aula
                             dataExpiracao.setHours(12, 0, 0, 0);
                         } else {
-                            // Tarde e Noite: Expiram à 00h00 do dia seguinte
                             dataExpiracao.setDate(dataExpiracao.getDate() + 1);
                             dataExpiracao.setHours(0, 0, 0, 0);
                         }
